@@ -6,22 +6,47 @@ import { useContext } from 'react'
 import SignInDialog from './SignInDialog'
 import { ContextMessages } from '@/context/ContextMessages'
 import { UserDetailsContext } from '@/context/UserDetailContext'
+import { useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { useRouter } from 'next/navigation'
 const Hero = () => {
+  const router = useRouter()
   const[input , setInput]=useState()
  const suggestions =['Create a todo app', 'create a budget tracker app', 'create a weather app', 'create a chat app', 'create a blog app',  'create a music app', 'create a photo editing app']
  const {messages , setMessages}=useContext(ContextMessages)
- const {userDeatils, setUserDetails}=useContext(UserDetailsContext)
+ const {userDetails, setUserDetails}=useContext(UserDetailsContext)
  const [openDialog , setOpenDialog] = useState(false)
- const onGenerate =(input)=>{
-  if(!userDeatils?.name){
-     setOpenDialog(true)
-    return
-  }
-    setMessages({
-      role:'user',
-      content : input
-    })
- }
+ const createWorkspace = useMutation(api.workspace.createWorkspace)
+ const onGenerate = async(input) => {
+    if(!userDetails || !userDetails._id){
+      setOpenDialog(true);
+      return;
+    }
+    
+    try {
+      setMessages({
+        role:'user',
+        content: input
+      });
+      
+      console.log("Creating workspace with user ID:", userDetails._id); // Debug log
+      
+      const workspaceId = await createWorkspace({
+        user: userDetails._id,
+        messages:[{
+          role:'user',
+          content:input
+        }]
+      });
+      
+      console.log('workspaceId', workspaceId);
+      if(workspaceId) {
+        await router.push(`/workspace/${workspaceId}`);
+      }
+    } catch (error) {
+      console.error("Error in onGenerate:", error);
+    }
+}
  
  return (
     <div className='flex flex-col mt-36 xl:mt-42 gap-3 items-center'>
