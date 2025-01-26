@@ -8,6 +8,9 @@ import { useState } from 'react'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { ConvexProvider, ConvexReactClient } from 'convex/react'
 import { api } from '@/convex/_generated/api'
+import { SidebarProvider } from '@/components/ui/sidebar'
+import AppSidebar from '@/components/custom/AppSidebar'
+
 
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL
 const convex = new ConvexReactClient(convexUrl)
@@ -27,7 +30,6 @@ const Provider = ({children}) => {
             const parsedUser = JSON.parse(storedUser)
             console.log("Parsed user:", parsedUser)
             
-            // Get the user from Convex using email
             const convexUser = await convex.query(api.users.GetUser, {
               email: parsedUser.email
             })
@@ -39,7 +41,6 @@ const Provider = ({children}) => {
                 _id: convexUser._id
               }
               console.log("Setting user with ID:", userWithId)
-              // Update localStorage with the merged data
               localStorage.setItem('user', JSON.stringify(userWithId))
               setUserDetails(userWithId)
             }
@@ -69,9 +70,14 @@ const Provider = ({children}) => {
               enableSystem={false}
               forcedTheme="dark"
             >
-              <div className="min-h-screen">
-                <Header />
-                {children}
+              <div className="max-h-screen">
+                <SidebarProvider defaultOpen={false}>
+                  <AppSidebar />
+                  <div>
+                    <Header />
+                    <main>{children}</main>
+                  </div>
+                </SidebarProvider>
               </div>
             </ThemeProvider>
           </ContextMessages.Provider>

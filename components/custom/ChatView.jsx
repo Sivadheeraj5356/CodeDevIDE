@@ -1,6 +1,6 @@
 'use client'
 import { api } from '@/convex/_generated/api'
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useConvex, useMutation } from 'convex/react'
 import { ContextMessages } from '@/context/ContextMessages'
@@ -70,22 +70,31 @@ const ChatView = () => {
      }])
      setInput('')
    }
+   const scrollRef = useRef(null)
+  useEffect(()=>{
+    if(scrollRef.current){
+     scrollRef.current?.scrollIntoView({ behavior : 'smooth'})
+    }
+  },[messages])
 
+ 
   return (
     <div className=' relative flex flex-col h-[85vh]'>
       <div className='flex-1 overflow-y-auto scrollbar-hide'>
       {messages?.map((msg,id)=>(
-        <div key={id} className='p-3 rounded-lg mb-2 bg-[#262626] flex gap-2 items-start leading-7'>
+        <div  key={id} className='p-3 rounded-lg mb-2 bg-[#262626] flex gap-2 items-start leading-7'>
           {msg?.role === 'user' && <Image src={userDetails?.picture} alt='user-image' width={30} height={30} className='rounded-full'></Image>}
            <h2><Markdown className='flex flex-col'>{msg.content}</Markdown></h2>
         </div>
       ))}
+      <div ref={scrollRef}>
       {loading && <>
        <div className='p-3 rounded-lg mb-2 bg-[#262626] flex gap-2 items-start'>
          <div> <Loader2Icon className='animate-spin'></Loader2Icon>  </div>
          <div>Generating from AI ....</div>
        </div>
       </>}
+      </div>
       </div>
 
 

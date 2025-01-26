@@ -2,12 +2,18 @@
 import { UserDetailsContext } from '@/context/UserDetailContext'
 import { useTheme } from 'next-themes'
 import { useContext, useEffect, useState } from 'react'
-
+import { PanelRight } from 'lucide-react'
+import { useSidebar } from '@/components/ui/sidebar'
 const Header = () => {
  const {userDetails,setUserDetails} = useContext(UserDetailsContext)
+ const {toggleSidebar} = useSidebar()
+
   return (
     <div className="p-4 justify-between flex items-center">
+      <div className='flex gap-5 justify-between items-center mt-2'>
+      <div onClick={toggleSidebar} className='cursor-pointer'> <PanelRight /> </div>
       <div className="text-2xl">CodeDevAI</div>
+      </div>
       <div className="flex gap-5">
       {!userDetails?.name && 
       <>

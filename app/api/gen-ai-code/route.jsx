@@ -8,7 +8,7 @@ export async function POST(req){
      const response = await result.response.text()
 
      return NextResponse.json(JSON.parse(response))
-    }catch(error){
+    }catch(e){
         return NextResponse.json({error : response})
 
     }
