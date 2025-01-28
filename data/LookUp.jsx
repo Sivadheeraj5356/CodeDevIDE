@@ -31,6 +31,32 @@ export default {
 @tailwind components;
 @tailwind utilities;`
     },
+    '/App.js': {
+      code: `
+import React from 'react';
+
+function App() {
+  return <h1>Hello, World!</h1>;
+}
+
+export default App; `
+  },
+  '/index.js': {
+      code: `
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+
+const rootElement = document.getElementById('root');
+const root = createRoot(rootElement);
+
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+     `
+  },
     '/tailwind.config.js': {
       code: `
             /** @type {import('tailwindcss').Config} */

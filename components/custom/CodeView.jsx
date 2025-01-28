@@ -91,34 +91,20 @@ const CodeView = () => {
       <SandpackProvider files={files} template="react" theme={'dark'}
        customSetup={{
         dependencies:{
-          "next": "^14.0.3",
-          "react": "^17.0.2",
-          "postcss":"^8",
-          "tailwindcss":"^3.4.1",
-          "autoprefixer":"^10.0.0",
-          "uuid4":"^2.0.3",
-          "tailwind-merge":"^2.4.0",
-          "lucide-react":"latest",
-          "react-router-dom":"latest",
-          "firebase":"^11.1.0",
-          "@google/generative-ai":"^0.21.0",
-          "@shadcn/ui": "latest", // Add ShadCN here
-          "clsx": "latest", // Utility for conditional classNames, often used with ShadCN
-          "react-icons": "latest",
-          "react-chartjs-2": "latest",
-          "chart.js": "latest" ,
-          "@radix-ui/react-dialog": "latest",
-          "@radix-ui/react-tooltip": "latest",
-          "@radix-ui/react-tabs": "latest"
-        },
-          "scripts": {
-            "dev": "next dev",
-            "build": "next build",
-            "start": "next start",
-            "lint": "next lint"
-          }
-        
-        
+         "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    autoprefixer: "^10.0.0",
+    "uuid4": "^2.0.3",
+    "tailwind-merge": "^2.4.0",
+    "tailwindcss-animate": "^1.0.7",
+    "lucide-react": "^0.469.0",
+    "react-router-dom": "^7.1.1",
+    "firebase": "^11.1.0",
+    "@google/generative-ai": "^0.21.0",
+    "date-fns": "^4.1.0",
+    "react-chartjs-2": "^5.3.0",
+    "chart.js": "^4.4.7",
+        }
        }}
        options={{externalResources:["https://cdn.tailwindcss.com"] }}
       >

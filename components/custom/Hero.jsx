@@ -49,7 +49,7 @@ const Hero = () => {
 }
  
  return (
-    <div className='flex flex-col mt-36 xl:mt-42 gap-3 items-center'>
+    <div className='flex w-screen flex-col mt-36 xl:mt-42 gap-3 justify-center items-center'>
       <h2 className='font-bold text-4xl tracking-tight '>What do you what to build ?</h2>
       <p className='text-gray-400 font-medim'>Prompt,run,edit and deploy full-stack web applications</p>
       <div className='p-5 border rounded-xl max-w-xl w-full mt-3 bg-[#151515]'>

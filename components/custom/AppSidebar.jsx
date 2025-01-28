@@ -12,7 +12,7 @@ import CustomSidebarFooter from './CustomSidebarFooter'
 import WorkSpaceHistory from './WorkSpaceHistory'
 const AppSidebar = () => {
     return (
-        <Sidebar>
+        <Sidebar className=' z-10'>
             <SidebarHeader className='p-4'>
                 <div className='p-5 text-2xl font-semibold '>
                     CodeDevIDE
