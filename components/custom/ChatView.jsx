@@ -19,6 +19,7 @@ const ChatView = () => {
   const {userDetails,setUserDetails} =useContext(UserDetailsContext)
   const [input , setInput]= useState()
   const [loading , setLoading] = useState(false)
+  const [pageLoading , setPageLoading] = useState(false)
   const updateMessages = useMutation(api.workspace.updateWorkspace)
    const convex = useConvex()
    useEffect(()=>{
@@ -81,8 +82,8 @@ const ChatView = () => {
   return (
     <div className=' relative flex flex-col h-[85vh]'>
       <div className='flex-1 overflow-y-auto scrollbar-hide'>
-      {messages?.map((msg,id)=>(
-        <div  key={id} className='p-3 rounded-lg mb-2 bg-[#262626] flex gap-2 items-start leading-7'>
+      {messages?.length>0&& messages?.map((msg,id)=>(
+        <div  key={id} className='p-3 px-5 rounded-lg mb-2 bg-[#262626] max-w-[470px] min-w-[470px] overflow-x-clip flex gap-2 items-start leading-7'>
           {msg?.role === 'user' && <Image src={userDetails?.picture} alt='user-image' width={30} height={30} className='rounded-full'></Image>}
            <h2><Markdown className='flex flex-col'>{msg.content}</Markdown></h2>
         </div>

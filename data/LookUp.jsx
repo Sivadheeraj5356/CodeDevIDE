@@ -25,12 +25,11 @@ export default {
   </body>
 </html>`
     },
-    '/App.css': {
-      code: `
-            @tailwind base;
-@tailwind components;
-@tailwind utilities;`
-    },
+    '/index.css': {
+    code: `@tailwind base;
+    @tailwind components;
+    @tailwind utilities;`
+  },
     '/App.js': {
       code: `
 import React from 'react';
@@ -59,16 +58,11 @@ root.render(
   },
     '/tailwind.config.js': {
       code: `
-            /** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}`
+           module.exports = {
+      content: ["./src/**/*.{html,js,jsx}"],
+      theme: { extend: {} },
+      plugins: [],
+    }`
     },
     '/postcss.config.js': {
       code: `/** @type {import('postcss-load-config').Config} */

@@ -21,6 +21,7 @@ function WorkspaceHistory() {
             userId:userDetail?._id
         });
         setWorkspaceList(result);
+        console.log('workspace list');
         console.log(result);
     }
   return (
@@ -35,6 +36,7 @@ function WorkspaceHistory() {
                     </h2>
                 </Link>
             ))}
+            
         </div>
     </div>
   )

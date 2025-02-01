@@ -10,9 +10,13 @@ import {
   UnstyledOpenInCodeSandboxButton
 } from "@codesandbox/sandpack-react";
 import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
+import { useActiveCode } from '@codesandbox/sandpack-react';
+import { Settings } from 'lucide-react';
+import { Minimize } from 'lucide-react';
+import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { Sandpack } from "@codesandbox/sandpack-react";
-
+import { Maximize } from 'lucide-react';
 import { ContextMessages } from '@/context/ContextMessages';
 import Prompt from '@/data/Prompt';
 import axios from 'axios';
@@ -20,12 +24,22 @@ import LookUp from '@/data/LookUp';
 import { Loader2Icon } from 'lucide-react';
 import { useConvex, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import SandpackPreviewClient from './SandpackPreviewClient';
+import { ActionContext } from '@/context/ActionContext';
+
+
 const CodeView = () => {
   const {id} = useParams()
   const [activeTab, setActiveTab] = useState('code')
   const {messages , setMessages} = useContext(ContextMessages)
   const [files , setFiles] = useState(LookUp.DEFAULT_FILE);
   const [loading, setLoading] = useState(false)
+  const [maximizePreview, setMaximizePreview] = useState(false)
+  const [hasLoaded, setHasLoaded] = useState(false);
+ const {action, setAction} = useContext(ActionContext)
+   useEffect(()=>{
+     setActiveTab('preview')
+   },[action])
   const updateFiles = useMutation(api.workspace.updateFiles)
   const convex = useConvex()
   useEffect(()=>{
@@ -38,7 +52,10 @@ const CodeView = () => {
     })
     const mergedFiles = {...LookUp.DEFAULT_FILE, ...result?.fileData}
     setFiles(mergedFiles)
+    setHasLoaded(true); // Mark initial load as complete
+
   }
+
   const generateAiCode = async()=>{
     setLoading(true)
     setActiveTab('code')
@@ -76,9 +93,13 @@ const CodeView = () => {
     }
   },[loading])
 
+
+
+
   return (
-    <div>
+    <div className='min-w-[960px] min-h-[650px]'>
       <div className='bg-[#181818] w-full p-2 border'>
+        <div className='flex justify-between items-center mr-5'>
         <div className='flex flex-wrap shrink-0 justify-center items-center bg-black p-1 w-[144px] gap-3 rounded-full'>
           <h2 onClick={() => {
             setActiveTab('code')
@@ -87,6 +108,11 @@ const CodeView = () => {
             setActiveTab('preview')
           }} className={`text-sm cursor-pointer ${activeTab == 'preview' && 'text-blue-500 bg-blue-500 bg-opacity-25 p-1 px-3 rounded-full'} `}>Preview</h2>
         </div>
+        <div>
+        { activeTab == 'preview' &&  <Maximize className='cursor-pointer' height={20} width={20} onClick={()=>setMaximizePreview(prev=> !prev)} /> }
+        </div>
+        </div>
+       
       </div>
       <SandpackProvider files={files} template="react" theme={'dark'}
        customSetup={{
@@ -106,9 +132,16 @@ const CodeView = () => {
     "chart.js": "^4.4.7",
         }
        }}
-       options={{externalResources:["https://cdn.tailwindcss.com"] }}
+       options={{externalResources:["https://cdn.tailwindcss.com"] , autorun : true  , autoReload: true,  readOnly: false,
+        // Enable all editor features
+        showLineNumbers: true,
+        showInlineErrors: true,  }}
       >
-        <SandpackLayout>
+        <SandpackLayout style={{
+    position: maximizePreview ? 'fixed' : 'relative',
+    top: maximizePreview ? '40px' : 'auto', 
+    height: maximizePreview ? 'calc(100vh - 40px)' : 'auto'
+  }}>
           {activeTab === 'code' ? 
           <> {loading? <div className='h-[80vh] flex items-center justify-center w-full'>
             <SandpackFileExplorer style={{ height: '80vh', opacity:'0.5' }} />
@@ -120,13 +153,14 @@ const CodeView = () => {
           <>
           
            <SandpackFileExplorer style={{ height: '80vh' }}  />
-           <SandpackCodeEditor style={{ height: '80vh' }} />
+           <CustomAceEditor 
+        style={{ height: '80vh' }} />
            {/* <SandpackConsole style={{ height: "10vh" }} className='relative w-full h-[10vh] -top-10'/> */}
 
           </> }
             </> : 
-            
-           <SandpackPreview style={{ height: '80vh' }} showNavigator={true} />}
+            <SandpackPreviewClient maximizePreview={maximizePreview} setMaximizePreview={setMaximizePreview}></SandpackPreviewClient>
+           }
         
         </SandpackLayout>
 
@@ -137,3 +171,20 @@ const CodeView = () => {
 }
 
 export default CodeView
+
+
+
+const CustomAceEditor = () => {
+  const { code, updateCode } = useActiveCode();
+ 
+  return (
+    <SandpackCodeEditor
+      defaultValue={code}
+      onChange={updateCode}
+      extensions={[autocompletion()]}
+        extensionsKeymap={[completionKeymap]} showTabs showInlineErrors
+        wrapContent closableTabs
+      style={{ height: '80vh' }}
+    />
+  );
+};
