@@ -111,3 +111,24 @@ body {
   }
 }
 
+/* app/globals.css */
+ .run .sp-c-dEbKhQ.sp-button {
+  background-color: #4CAF50; /* Green background */
+  color: #FFFFFF;           /* White text */
+  border: none;             /* Remove border */
+  border-radius: 5px;       /* Rounded corners */
+  padding: 8px 16px;        /* Button padding */
+  font-weight:normal;        /* Bold text */
+  transition: background-color 0.3s ease;
+  font-size: 16px; /* Smooth transition */
+  margin-bottom: 8px;
+  margin-right: 12px;
+}
+
+  .run .sp-c-dEbKhQ.sp-button:hover {
+  background-color: #45a049; /* Darker green on hover */
+  cursor: pointer;           /* Pointer cursor on hover */
+}
+.run button[title='Open in CodeSandbox']{
+  display: none !important;
+}

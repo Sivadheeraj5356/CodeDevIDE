@@ -41,7 +41,9 @@ const SandpackPreviewClient = ({maximizePreview, setMaximizePreview}) => {
   }
   return (
        <SandpackPreview style={previewStyle} showNavigator={true} 
-       ref={prevRef}
+       ref={prevRef} showRefreshButton={true} showOpenNewtab={true} showRestartButton={true}
+       showOpenInCodeSandbox={true} // Add this prop
+
                   actionsChildren={
                    <CustomNavigator 
                      onToggleFullscreen={toggleFullscreen}

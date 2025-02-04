@@ -46,6 +46,8 @@ const path = usePathname()
           <div className='flex gap-5 items-center justify-end'>
             <Button variant="ghost" onClick={()=>onActionBtn('export')} ><LucideDownload/> Export</Button>
             <Button className="bg-blue-500 text-white hover:bg-blue-600"
+            onClick={()=>onActionBtn('export')}>  Open in Editor </Button>
+            <Button className="bg-blue-500 text-white hover:bg-blue-600"
             onClick={()=>onActionBtn('deploy')}><Rocket/>  Deploy </Button>
              {userDetails&& <Image src={userDetails?.picture} alt='user' width={30} height={30}
            className='rounded-full w-[30px] cursor-pointer'

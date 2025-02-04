@@ -7,7 +7,7 @@ import {
   SandpackPreview,
   SandpackFileExplorer,
   SandpackConsole,
-  UnstyledOpenInCodeSandboxButton,
+  OpenInCodeSandboxButton,
   useSandpack
 } from "@codesandbox/sandpack-react";
 import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
@@ -37,7 +37,9 @@ const CodeView = () => {
  const {action, setAction} = useContext(ActionContext)
 
    useEffect(()=>{
-     setActiveTab('code')
+    if(action?.actionType === 'export' || action?.actionType === 'deploy'){
+      setActiveTab('preview')
+    }
    },[action])
   const updateFiles = useMutation(api.workspace.updateFiles)
   const convex = useConvex()
@@ -114,6 +116,7 @@ const CodeView = () => {
         </div>
        
       </div>
+      <div className='run'>
       <SandpackProvider files={files} template="react" theme={'dark'}
        customSetup={{
         dependencies:{
@@ -134,7 +137,10 @@ const CodeView = () => {
        }}
        options={{externalResources:["https://cdn.tailwindcss.com"] , autorun : true  , autoReload: true,  readOnly: false,
         showLineNumbers: true,
-        showInlineErrors: true,  }}
+        showInlineErrors: true, 
+        showRunButton : true, 
+        showPreview:true
+      }}
       >
         <SandpackLayout style={{
     position: maximizePreview ? 'fixed' : 'relative',
@@ -155,7 +161,7 @@ const CodeView = () => {
            <CustomAceEditor 
         style={{ height: '80vh' }} />
            {/* <SandpackConsole style={{ height: "10vh" }} className='relative w-full h-[10vh] -top-10'/> */}
-
+         
           </> }
         
             </> : 
@@ -165,7 +171,7 @@ const CodeView = () => {
         </SandpackLayout>
 
       </SandpackProvider>
-       
+      </div>
     </div>
   )
 }
@@ -183,7 +189,7 @@ const CustomAceEditor = () => {
       onChange={updateCode}
       extensions={[autocompletion()]}
         extensionsKeymap={[completionKeymap]} showTabs showInlineErrors
-        wrapContent closableTabs
+        wrapContent closableTabs showLineNumbers showRunButton
       style={{ height: '80vh' }}
     />
   );
