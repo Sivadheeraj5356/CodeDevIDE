@@ -7,15 +7,13 @@ import {
   SandpackPreview,
   SandpackFileExplorer,
   SandpackConsole,
-  UnstyledOpenInCodeSandboxButton
+  UnstyledOpenInCodeSandboxButton,
+  useSandpack
 } from "@codesandbox/sandpack-react";
 import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
 import { useActiveCode } from '@codesandbox/sandpack-react';
-import { Settings } from 'lucide-react';
-import { Minimize } from 'lucide-react';
-import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { Sandpack } from "@codesandbox/sandpack-react";
+import { Sandpack } from '@codesandbox/sandpack-react';
 import { Maximize } from 'lucide-react';
 import { ContextMessages } from '@/context/ContextMessages';
 import Prompt from '@/data/Prompt';
@@ -37,8 +35,9 @@ const CodeView = () => {
   const [maximizePreview, setMaximizePreview] = useState(false)
   const [hasLoaded, setHasLoaded] = useState(false);
  const {action, setAction} = useContext(ActionContext)
+
    useEffect(()=>{
-     setActiveTab('preview')
+     setActiveTab('code')
    },[action])
   const updateFiles = useMutation(api.workspace.updateFiles)
   const convex = useConvex()
@@ -110,6 +109,7 @@ const CodeView = () => {
         </div>
         <div>
         { activeTab == 'preview' &&  <Maximize className='cursor-pointer' height={20} width={20} onClick={()=>setMaximizePreview(prev=> !prev)} /> }
+          
         </div>
         </div>
        
@@ -133,7 +133,6 @@ const CodeView = () => {
         }
        }}
        options={{externalResources:["https://cdn.tailwindcss.com"] , autorun : true  , autoReload: true,  readOnly: false,
-        // Enable all editor features
         showLineNumbers: true,
         showInlineErrors: true,  }}
       >
@@ -158,6 +157,7 @@ const CodeView = () => {
            {/* <SandpackConsole style={{ height: "10vh" }} className='relative w-full h-[10vh] -top-10'/> */}
 
           </> }
+        
             </> : 
             <SandpackPreviewClient maximizePreview={maximizePreview} setMaximizePreview={setMaximizePreview}></SandpackPreviewClient>
            }
@@ -188,3 +188,4 @@ const CustomAceEditor = () => {
     />
   );
 };
+

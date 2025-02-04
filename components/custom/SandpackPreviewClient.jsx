@@ -16,7 +16,6 @@ const SandpackPreviewClient = ({maximizePreview, setMaximizePreview}) => {
         console.log(client)
           const result = await client.getCodeSandboxURL()
           if(action?.actionType === 'deploy'){
-            // window.location.href =`https://codesandbox.io/s/${result?.sandboxId}`
             window.open('https://'+result?.sandboxId+'.csb.app')
        }else if(action?.actionType === 'export'){
         window.open('https://codesandbox.io/s/'+result?.sandboxId)
@@ -61,9 +60,7 @@ const CustomNavigator = ({ onToggleFullscreen, isFullscreen}) => (
         onClick={onToggleFullscreen}
         className="fixed top-3 right-5 z-999" 
       >
-        {isFullscreen ? <Minimize size={20} /> :"" }
-      </button>
-      
-      
+        {isFullscreen ?  <Minimize size={20} /> :"" }
+      </button>  
     </div>
 )

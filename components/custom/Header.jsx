@@ -42,7 +42,7 @@ const path = usePathname()
           Get Started
         </button> 
         </div>:
-          path?.includes('workspace')&&
+          path?.includes('workspace')?
           <div className='flex gap-5 items-center justify-end'>
             <Button variant="ghost" onClick={()=>onActionBtn('export')} ><LucideDownload/> Export</Button>
             <Button className="bg-blue-500 text-white hover:bg-blue-600"
@@ -51,7 +51,13 @@ const path = usePathname()
            className='rounded-full w-[30px] cursor-pointer'
            onClick={toggleSidebar}
            />}
-          </div>
+          </div>:
+          <>
+          {userDetails && <Image src={userDetails?.picture} alt='user' width={30} height={30}
+            className='rounded-full w-[30px] cursor-pointer'
+            onClick={toggleSidebar}
+            />}
+          </>
           }
            
   
