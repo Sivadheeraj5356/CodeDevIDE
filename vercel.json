@@ -1,6 +1,6 @@
 {
     "functions": {
-      "app/api/gen-ai-code/route.js": {
+      "app/api/gen-ai-code/route.jsx": {
         "maxDuration": 60 
       }
     }
