@@ -67,7 +67,3 @@ data/LookUp.jsx               default Sandpack files and dependencies
 Push to Vercel and set `NEXT_PUBLIC_CONVEX_URL`, `NEXT_PUBLIC_GOOGLE_AUTH_KEY`, `GEMINI_API_KEY` and `GEMINI_MODEL` in the project's environment variables, then run `npx convex deploy` so the production Convex deployment has the current functions. Add the deployed domain to the OAuth client's authorized origins too.
 
 `vercel.json` raises the timeout on `/api/gen-ai-code` to 60 seconds. Generating a full project usually takes 25 to 45 seconds, so that ceiling is real: very elaborate prompts can hit it. Trimming `CODE_GEN_PROMPT` in `data/Prompt.jsx` is the cheapest way to speed things up, since it currently asks for a header, navbar, footer, dashboard, routing and a dark mode toggle on every single generation.
-
-## Known limitations
-
-Sign-in state lives in `localStorage` and Convex queries trust the email in it, so this is a demo-grade auth setup rather than a secure one. The Deploy and Export buttons open the generated project on CodeSandbox — a hosted preview and the CodeSandbox editor respectively — rather than deploying anywhere you control. Generated projects are limited to the dependencies pre-declared in `data/LookUp.jsx`, and Gemini occasionally returns a project too large to fit in one response, which surfaces as a "response got cut off" error.
