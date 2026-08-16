@@ -8,21 +8,23 @@ import { useSidebar } from '../ui/sidebar';
 import Link from 'next/link';
 
 function WorkspaceHistory() {
-    const {userDetail,setUserDetail}=useContext(UserDetailsContext);
+    const {userDetails}=useContext(UserDetailsContext);
     const convex=useConvex();
     const [workspaceList,setWorkspaceList]=useState();
     const {toggleSidebar}=useSidebar();
     useEffect(()=>{
-        userDetail&&GetAllWorkspace();
-    },[userDetail])
+        userDetails?._id&&GetAllWorkspace();
+    },[userDetails])
 
     const GetAllWorkspace=async()=>{
-        const result=await convex.query(api.workspace.GetAllWorkspace,{
-            userId:userDetail?._id
-        });
-        setWorkspaceList(result);
-        console.log('workspace list');
-        console.log(result);
+        try{
+            const result=await convex.query(api.workspace.GetAllWorkspace,{
+                userId:userDetails?._id
+            });
+            setWorkspaceList(result);
+        }catch(err){
+            console.error('Failed to load workspace history:', err);
+        }
     }
   return (
     <div>

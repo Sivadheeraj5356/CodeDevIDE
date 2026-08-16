@@ -17,7 +17,7 @@ const ChatView = () => {
   const {id} = useParams()
   const {messages , setMessages} = useContext(ContextMessages)
   const {userDetails,setUserDetails} =useContext(UserDetailsContext)
-  const [input , setInput]= useState()
+  const [input , setInput]= useState('')
   const [loading , setLoading] = useState(false)
   const [pageLoading , setPageLoading] = useState(false)
   const updateMessages = useMutation(api.workspace.updateWorkspace)
@@ -28,31 +28,48 @@ const ChatView = () => {
 
 
    const getWorkspaceData =async()=>{
-    const result = await convex.query(api.workspace.getWorkspace,{
-      workspaceId :id
-    })
-    setMessages(result?.messages)
-    console.log('workspace id info', result)
+    try{
+      const result = await convex.query(api.workspace.getWorkspace,{
+        workspaceId :id
+      })
+      setMessages(result?.messages ?? [])
+    }catch(err){
+      console.error('Failed to load workspace:', err)
+      setMessages([])
+    }
    }
 
 
    const getAiResponse =async()=>{
     setLoading(true)
     const PROMPT =JSON.stringify(messages) + Prompt.CHAT_PROMPT
+    try{
       const result = await axios.post('/api/ai-chat',{
         prompt:PROMPT
       })
-      console.log(result.data.result)
+      const content = result?.data?.result
+      if(!content){
+        throw new Error(result?.data?.error || 'Empty response from the AI model')
+      }
       const aiResp = {
         role:'ai',
-        content:result.data.result
+        content
       }
       setMessages(prev=>[...prev,aiResp])
       await updateMessages({
         messages:[...messages,aiResp],
         workspaceId:id
       })
+    }catch(err){
+      const message = err?.response?.data?.error || err?.message || 'Something went wrong'
+      console.error('getAiResponse failed:', message)
+      setMessages(prev=>[...prev,{
+        role:'ai',
+        content:`⚠️ ${message}`
+      }])
+    }finally{
       setLoading(false)
+    }
    }
 
    useEffect(()=>{
@@ -84,8 +101,8 @@ const ChatView = () => {
       <div className='flex-1 overflow-y-auto scrollbar-hide'>
       {messages?.length>0&& messages?.map((msg,id)=>(
         <div  key={id} className='p-3 px-5 rounded-lg mb-2 bg-[#262626] max-w-[470px] min-w-[470px] overflow-x-clip flex gap-2 items-start leading-7'>
-          {msg?.role === 'user' && <Image src={userDetails?.picture} alt='user-image' width={30} height={30} className='rounded-full'></Image>}
-           <h2><Markdown className='flex flex-col'>{msg.content}</Markdown></h2>
+          {msg?.role === 'user' && userDetails?.picture && <Image src={userDetails.picture} alt='user-image' width={30} height={30} className='rounded-full'></Image>}
+           <div><Markdown className='flex flex-col'>{msg?.content ?? ''}</Markdown></div>
         </div>
       ))}
       <div ref={scrollRef}>

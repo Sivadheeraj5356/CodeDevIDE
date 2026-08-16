@@ -1,5 +1,5 @@
 "use client"
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import {
   SandpackProvider,
   SandpackLayout,
@@ -34,6 +34,11 @@ const CodeView = () => {
   const [loading, setLoading] = useState(false)
   const [maximizePreview, setMaximizePreview] = useState(false)
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [error, setError] = useState(null)
+  const [mounted, setMounted] = useState(false)
+  const hasSavedFiles = useRef(false)
+  const didInitialCheck = useRef(false)
+  const isGenerating = useRef(false)
  const {action, setAction} = useContext(ActionContext)
 
    useEffect(()=>{
@@ -47,46 +52,79 @@ const CodeView = () => {
     id&& getFiles()
   },[id])
 
-  const getFiles = async()=>{
-    const result = await convex.query(api.workspace.getWorkspace,{
-      workspaceId:id
-    })
-    const mergedFiles = {...LookUp.DEFAULT_FILE, ...result?.fileData}
-    setFiles(mergedFiles)
-    setHasLoaded(true); // Mark initial load as complete
+  // Sandpack renders differently on the server than in the browser, so it is
+  // only mounted after hydration.
+  useEffect(()=>{
+    setMounted(true)
+  },[])
 
+  const getFiles = async()=>{
+    try{
+      const result = await convex.query(api.workspace.getWorkspace,{
+        workspaceId:id
+      })
+      hasSavedFiles.current = !!result?.fileData && Object.keys(result.fileData).length > 0
+      const mergedFiles = {...LookUp.DEFAULT_FILE, ...result?.fileData}
+      setFiles(mergedFiles)
+    }catch(err){
+      console.error('Failed to load workspace files:', err)
+      setError('Could not load this workspace')
+    }finally{
+      setHasLoaded(true); // Mark initial load as complete
+    }
   }
 
   const generateAiCode = async()=>{
     setLoading(true)
+    setError(null)
     setActiveTab('code')
     const PROMPT = JSON.stringify(messages) +" " + Prompt.CODE_GEN_PROMPT
-    const result = await axios.post('/api/gen-ai-code',{
-      prompt : PROMPT
-    }, {
-      headers: {
-          'Content-Type': 'application/json'
+    try{
+      const result = await axios.post('/api/gen-ai-code',{
+        prompt : PROMPT
+      }, {
+        headers: {
+            'Content-Type': 'application/json'
+        }
+      })
+      const AiCodeResponse = result.data
+      const generatedFiles = AiCodeResponse?.files
+
+      if(!generatedFiles || Object.keys(generatedFiles).length === 0){
+        throw new Error(AiCodeResponse?.error || 'The AI did not return any files')
       }
-  })
-    console.log(result.data)
-    const AiCodeResponse = result.data
-    const mergedFiles = {...LookUp.DEFAULT_FILE, ...AiCodeResponse?.files}
-    setFiles(mergedFiles)
-    await updateFiles({
-      workspaceId:id,
-      files:AiCodeResponse?.files
-    })
-    setLoading(false)
+
+      setFiles({...LookUp.DEFAULT_FILE, ...generatedFiles})
+      await updateFiles({
+        workspaceId:id,
+        files:generatedFiles
+      })
+    }catch(err){
+      const message = err?.response?.data?.error || err?.message || 'Something went wrong while generating code'
+      console.error('generateAiCode failed:', message)
+      setError(message)
+    }finally{
+      setLoading(false)
+    }
   }
 
   useEffect(()=>{
- if(messages?.length > 0){
-  const role = messages[messages?.length -1].role
-  if(role == 'user'){
-    generateAiCode()
-  }
- }
-  },[messages])
+    if(!hasLoaded || isGenerating.current) return
+    if(!(messages?.length > 0)) return
+    if(messages[messages.length - 1].role !== 'user') return
+
+    // On the first pass the messages come from the database, so regenerate only
+    // when this workspace has no code saved yet. Later passes are new prompts.
+    if(!didInitialCheck.current){
+      didInitialCheck.current = true
+      if(hasSavedFiles.current) return
+    }
+
+    isGenerating.current = true
+    generateAiCode().finally(()=>{
+      isGenerating.current = false
+    })
+  },[messages, hasLoaded])
 
   useEffect(()=>{
     if(loading){
@@ -116,7 +154,13 @@ const CodeView = () => {
         </div>
        
       </div>
+      {error && <div className='bg-red-500/10 border border-red-500/40 text-red-300 text-sm p-3'>
+        {error}
+      </div>}
       <div className='run'>
+      {!mounted ? <div className='h-[80vh] flex items-center justify-center w-full bg-[#151515]'>
+        <Loader2Icon className='animate-spin' width={40} height={40} />
+      </div> :
       <SandpackProvider files={files} template="react" theme={'dark'}
        customSetup={{
         dependencies:{
@@ -170,7 +214,7 @@ const CodeView = () => {
         
         </SandpackLayout>
 
-      </SandpackProvider>
+      </SandpackProvider>}
       </div>
     </div>
   )

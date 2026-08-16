@@ -11,21 +11,38 @@ const SandpackPreviewClient = ({maximizePreview, setMaximizePreview}) => {
     const prevRef = useRef()
     const {action , setAction} = useContext(ActionContext)
     const GetSandpackClient =async()=>{
-       const client = prevRef.current?.getClient() 
-       if(client){
-        console.log(client)
-          const result = await client.getCodeSandboxURL()
-          if(action?.actionType === 'deploy'){
-            window.open('https://'+result?.sandboxId+'.csb.app')
-       }else if(action?.actionType === 'export'){
-        window.open('https://codesandbox.io/s/'+result?.sandboxId)
-       }
+      const actionType = action?.actionType
+      if(actionType !== 'deploy' && actionType !== 'export') return
+
+      // The bundler may not be ready on the first pass; this effect runs again
+      // when its status changes, so leave the action pending until then.
+      const client = prevRef.current?.getClient()
+      if(!client) return
+
+      try{
+        const result = await client.getCodeSandboxURL()
+        if(!result?.sandboxId){
+          console.error('CodeSandbox did not return a sandbox id')
+          return
+        }
+
+        if(actionType === 'deploy'){
+          window.open('https://'+result.sandboxId+'.csb.app')
+        }else{
+          window.open('https://codesandbox.io/s/'+result.sandboxId)
+        }
+      }catch(err){
+        console.error('Could not open the sandbox:', err)
+      }finally{
+        // Consume the action, otherwise simply switching back to the preview
+        // tab remounts this component and opens the tab all over again.
+        setAction(null)
+      }
     }
-}
 
     useEffect(()=>{
       GetSandpackClient()
-    },[sandpack&&action])
+    },[action, sandpack?.status])
 
   const previewStyle = useMemo(() => ({
     height: maximizePreview ? "100vh" : "80vh",

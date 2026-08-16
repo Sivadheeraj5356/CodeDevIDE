@@ -11,7 +11,7 @@ import { api } from '@/convex/_generated/api'
 import { useRouter } from 'next/navigation'
 const Hero = () => {
   const router = useRouter()
-  const[input , setInput]=useState()
+  const[input , setInput]=useState('')
  const suggestions =['Create a todo app', 'create a budget tracker app', 'create a weather app', 'create a chat app', 'create a blog app',  'create a music app', 'create a photo editing app']
  const {messages , setMessages}=useContext(ContextMessages)
  const {userDetails, setUserDetails}=useContext(UserDetailsContext)
@@ -24,10 +24,10 @@ const Hero = () => {
     }
     
     try {
-      setMessages({
+      setMessages([{
         role:'user',
         content: input
-      });
+      }]);
       
       console.log("Creating workspace with user ID:", userDetails._id); // Debug log
       

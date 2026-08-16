@@ -6,64 +6,63 @@ import { ContextMessages } from '@/context/ContextMessages'
 import { UserDetailsContext } from '@/context/UserDetailContext'
 import { useState } from 'react'
 import { GoogleOAuthProvider } from '@react-oauth/google'
-import { ConvexProvider, ConvexReactClient } from 'convex/react'
+import { useConvex } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import AppSidebar from '@/components/custom/AppSidebar'
 import { ActionContext } from '@/context/ActionContext'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
-const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL
-const convex = new ConvexReactClient(convexUrl)
 const Provider = ({children}) => {
   const [messages, setMessages] = useState()
   const [userDetails, setUserDetails] = useState()
   const [action, setAction] = useState()
   const router = useRouter()
+  const pathname = usePathname()
+  const convex = useConvex()
   useEffect(() => {
     const isAuthenticated = async () => {
       try {
-        if(typeof window !== 'undefined') {
-          const storedUser = localStorage.getItem('user')
-          console.log("Stored user (raw):", storedUser)
-           
-          if(!storedUser) {
+        const storedUser = localStorage.getItem('user')
+
+        if (!storedUser) {
+          if (pathname !== '/') {
             router.push('/')
-          } else
-          if (storedUser) {
-            const parsedUser = JSON.parse(storedUser)
-            console.log("Parsed user:", parsedUser)
-            
-            const convexUser = await convex.query(api.users.GetUser, {
-              email: parsedUser.email
-            })
-            console.log("Convex query result:", convexUser)
-            
-            if (convexUser) {
-              const userWithId = {
-                ...parsedUser,
-                _id: convexUser._id
-              }
-              console.log("Setting user with ID:", userWithId)
-              localStorage.setItem('user', JSON.stringify(userWithId))
-              setUserDetails(userWithId)
-            }
           }
+          return
         }
+
+        const parsedUser = JSON.parse(storedUser)
+        const convexUser = await convex.query(api.users.GetUser, {
+          email: parsedUser.email
+        })
+
+        if (!convexUser) {
+          // The stored session points at a user that no longer exists in this
+          // Convex deployment. Keeping it would leave the app signed in with no
+          // usable id, so drop it and let the user sign in again.
+          console.warn('Stored session is no longer valid, signing out:', parsedUser.email)
+          localStorage.removeItem('user')
+          setUserDetails(undefined)
+          return
+        }
+
+        const userWithId = {
+          ...parsedUser,
+          _id: convexUser._id
+        }
+        localStorage.setItem('user', JSON.stringify(userWithId))
+        setUserDetails(userWithId)
       } catch (error) {
         console.error("Error in isAuthenticated:", error)
       }
     }
-    
+
     isAuthenticated()
   }, [])
 
-  useEffect(() => {
-    console.log("Current userDetails:", userDetails)
-  }, [userDetails])
-
   return (
-    <ConvexProvider client={convex}>
+    <>
       <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_AUTH_KEY}>
         <UserDetailsContext.Provider value={{userDetails, setUserDetails}}>
           <ContextMessages.Provider value={{messages, setMessages}}>
@@ -90,7 +89,7 @@ const Provider = ({children}) => {
           </ContextMessages.Provider>
         </UserDetailsContext.Provider>
       </GoogleOAuthProvider>
-    </ConvexProvider>
+    </>
   )
 }
 
