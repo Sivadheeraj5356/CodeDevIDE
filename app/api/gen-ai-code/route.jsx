@@ -1,4 +1,4 @@
-import { createCodeSession } from "@/configs/AiGeminiModel"
+import { createCodeSession, describeAiError } from "@/configs/AiGeminiModel"
 import { NextResponse } from "next/server"
 
 // The model is asked for raw JSON, but it sometimes wraps it in a markdown
@@ -51,10 +51,8 @@ export async function POST(req) {
 
         return NextResponse.json(parsed)
     } catch (e) {
-        console.error("[api/gen-ai-code]", e)
-        return NextResponse.json(
-            { error: e?.message || "Failed to generate code" },
-            { status: 500 }
-        )
+        const { status, message } = describeAiError(e)
+        console.error(`[api/gen-ai-code] ${status}: ${message}`)
+        return NextResponse.json({ error: message }, { status })
     }
 }

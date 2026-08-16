@@ -64,3 +64,51 @@ export function createCodeSession() {
 }
 
 export const GEMINI_MODEL_NAME = MODEL_NAME;
+
+function findQuotaViolation(error) {
+  const details = Array.isArray(error?.errorDetails) ? error.errorDetails : [];
+  const quotaFailure = details.find((d) =>
+    String(d["@type"]).includes("QuotaFailure")
+  );
+  return quotaFailure?.violations?.[0];
+}
+
+// The SDK throws with the provider's whole JSON payload in the message, which is
+// several hundred characters of quota metadata. Turn it into one line a user can
+// act on, and keep an HTTP status the client can branch on.
+export function describeAiError(error) {
+  const status = error?.status ?? error?.response?.status;
+
+  if (status === 429 || /429|Too Many Requests|quota/i.test(error?.message || "")) {
+    const violation = findQuotaViolation(error);
+    const perDay = String(violation?.quotaId || "").includes("PerDay");
+    const limit = violation?.quotaValue;
+
+    return {
+      status: 429,
+      message: perDay
+        ? `Daily Gemini limit reached${limit ? ` (${limit} requests a day` : " (free tier"} for ${MODEL_NAME}). The quota resets at midnight Pacific time, or you can enable billing on the API key.`
+        : `Gemini is rate limiting this key. Wait a few seconds and try again.`,
+    };
+  }
+
+  if (status === 401 || status === 403) {
+    return {
+      status: 401,
+      message: "The Gemini API key is missing, invalid, or not allowed to use this model.",
+    };
+  }
+
+  if (status === 503 || /overloaded/i.test(error?.message || "")) {
+    return {
+      status: 503,
+      message: "Gemini is overloaded right now. Try again in a moment.",
+    };
+  }
+
+  if (/Missing Gemini API key/i.test(error?.message || "")) {
+    return { status: 500, message: error.message };
+  }
+
+  return { status: 500, message: "The AI model could not be reached. Try again." };
+}

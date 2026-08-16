@@ -19,7 +19,7 @@ import { ContextMessages } from '@/context/ContextMessages';
 import Prompt from '@/data/Prompt';
 import axios from 'axios';
 import LookUp from '@/data/LookUp';
-import { Loader2Icon } from 'lucide-react';
+import { AlertTriangle, Loader2Icon } from 'lucide-react';
 import { useConvex, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import SandpackPreviewClient from './SandpackPreviewClient';
@@ -154,8 +154,14 @@ const CodeView = () => {
         </div>
        
       </div>
-      {error && <div className='bg-red-500/10 border border-red-500/40 text-red-300 text-sm p-3'>
-        {error}
+      {error && <div className='bg-red-500/10 border border-red-500/40 text-sm p-3 flex gap-3 items-start'>
+        <AlertTriangle className='h-5 w-5 shrink-0 text-red-400 mt-0.5' />
+        <div>
+          <p className='text-red-200 leading-6'>{error}</p>
+          <button onClick={generateAiCode} className='mt-1 text-blue-400 hover:underline'>
+            Try again
+          </button>
+        </div>
       </div>}
       <div className='run'>
       {!mounted ? <div className='h-[80vh] flex items-center justify-center w-full bg-[#151515]'>

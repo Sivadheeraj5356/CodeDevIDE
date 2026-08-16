@@ -1,4 +1,4 @@
-import { createChatSession } from "@/configs/AiGeminiModel"
+import { createChatSession, describeAiError } from "@/configs/AiGeminiModel"
 import { NextResponse } from "next/server"
 
 export async function POST(req) {
@@ -15,10 +15,8 @@ export async function POST(req) {
 
         return NextResponse.json({ result: AiResponse })
     } catch (error) {
-        console.error("[api/ai-chat]", error)
-        return NextResponse.json(
-            { error: error?.message || "Failed to get a response from the AI model" },
-            { status: 500 }
-        )
+        const { status, message } = describeAiError(error)
+        console.error(`[api/ai-chat] ${status}: ${message}`)
+        return NextResponse.json({ error: message }, { status })
     }
 }

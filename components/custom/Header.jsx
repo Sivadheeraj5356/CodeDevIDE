@@ -26,13 +26,13 @@ const path = usePathname()
  }
 
   return (
-    <div className="p-4 justify-between flex items-center">
-      <div className='flex gap-3 justify-between items-center mt-2 pl-3'>
+    <div className="w-full p-4 flex items-center justify-between gap-4">
+      <div className='flex gap-3 items-center mt-2 pl-3 shrink-0'>
       <div onClick={toggleSidebar} className='cursor-pointer'> <PanelRight width={28} height={28}/> </div>
       <div className="text-2xl font-semibold">CodeDevAI</div>
       </div>
       {!userDetails?.name ?
-            <div className="flex gap-5">
+            <div className="flex gap-5 shrink-0">
       <button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
           onClick={()=>setOpenLoginDialog(true)}
      >
@@ -43,7 +43,7 @@ const path = usePathname()
         </button> 
         </div>:
           path?.includes('workspace')?
-          <div className='flex gap-5 items-center justify-end'>
+          <div className='flex gap-5 items-center justify-end shrink-0'>
             <Button variant="ghost" onClick={()=>onActionBtn('export')} ><LucideDownload/> Export</Button>
             <Button className="bg-blue-500 text-white hover:bg-blue-600"
             onClick={()=>onActionBtn('export')}>  Open in Editor </Button>
@@ -54,12 +54,12 @@ const path = usePathname()
            onClick={toggleSidebar}
            />}
           </div>:
-          <>
+          <div className='flex items-center justify-end shrink-0'>
           {userDetails && <Image src={userDetails?.picture} alt='user' width={30} height={30}
             className='rounded-full w-[30px] cursor-pointer'
             onClick={toggleSidebar}
             />}
-          </>
+          </div>
           }
            
   

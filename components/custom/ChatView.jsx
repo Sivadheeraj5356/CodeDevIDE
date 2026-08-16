@@ -10,7 +10,7 @@ import { Link } from 'lucide-react'
 import { ArrowRight } from 'lucide-react'
 import Prompt from '@/data/Prompt'
 import axios from 'axios'
-import { Loader2Icon } from 'lucide-react'
+import { AlertTriangle, Loader2Icon } from 'lucide-react'
 import Markdown from 'react-markdown'
 
 const ChatView = () => {
@@ -20,6 +20,7 @@ const ChatView = () => {
   const [input , setInput]= useState('')
   const [loading , setLoading] = useState(false)
   const [pageLoading , setPageLoading] = useState(false)
+  const [chatError , setChatError] = useState(null)
   const updateMessages = useMutation(api.workspace.updateWorkspace)
    const convex = useConvex()
    useEffect(()=>{
@@ -42,6 +43,7 @@ const ChatView = () => {
 
    const getAiResponse =async()=>{
     setLoading(true)
+    setChatError(null)
     const PROMPT =JSON.stringify(messages) + Prompt.CHAT_PROMPT
     try{
       const result = await axios.post('/api/ai-chat',{
@@ -63,10 +65,9 @@ const ChatView = () => {
     }catch(err){
       const message = err?.response?.data?.error || err?.message || 'Something went wrong'
       console.error('getAiResponse failed:', message)
-      setMessages(prev=>[...prev,{
-        role:'ai',
-        content:`⚠️ ${message}`
-      }])
+      // Kept out of the message list so a failed turn is not saved to the
+      // workspace and the retry can resend the same conversation.
+      setChatError(message)
     }finally{
       setLoading(false)
     }
@@ -112,6 +113,20 @@ const ChatView = () => {
          <div>Generating from AI ....</div>
        </div>
       </>}
+      {!loading && chatError && (
+        <div className='p-3 px-4 rounded-lg mb-2 border border-red-500/40 bg-red-500/10 max-w-[470px] flex gap-3 items-start'>
+          <AlertTriangle className='h-5 w-5 shrink-0 text-red-400 mt-0.5' />
+          <div className='text-sm'>
+            <p className='text-red-200 leading-6'>{chatError}</p>
+            <button
+              onClick={getAiResponse}
+              className='mt-2 text-blue-400 hover:underline'
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      )}
       </div>
       </div>
 

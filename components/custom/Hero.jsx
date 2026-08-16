@@ -1,6 +1,6 @@
 "use client"
 import React, { useState } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Loader2Icon } from 'lucide-react'
 import { Link } from 'lucide-react'
 import { useContext } from 'react'
 import SignInDialog from './SignInDialog'
@@ -16,21 +16,28 @@ const Hero = () => {
  const {messages , setMessages}=useContext(ContextMessages)
  const {userDetails, setUserDetails}=useContext(UserDetailsContext)
  const [openDialog , setOpenDialog] = useState(false)
+ const [creating , setCreating] = useState(false)
+ const [error , setError] = useState(null)
  const createWorkspace = useMutation(api.workspace.createWorkspace)
  const onGenerate = async(input) => {
+    if(!input?.trim() || creating) return
+
     if(!userDetails || !userDetails._id){
       setOpenDialog(true);
       return;
     }
-    
+
+    // Creating the workspace and routing to it takes a moment, so the button
+    // has to show it is working before anything on screen changes.
+    setCreating(true)
+    setError(null)
+
     try {
       setMessages([{
         role:'user',
         content: input
       }]);
-      
-      console.log("Creating workspace with user ID:", userDetails._id); // Debug log
-      
+
       const workspaceId = await createWorkspace({
         user: userDetails._id,
         messages:[{
@@ -38,13 +45,17 @@ const Hero = () => {
           content:input
         }]
       });
-      
-      console.log('workspaceId', workspaceId);
-      if(workspaceId) {
-        await router.push(`/workspace/${workspaceId}`);
+
+      if(!workspaceId){
+        throw new Error('The workspace could not be created')
       }
-    } catch (error) {
-      console.error("Error in onGenerate:", error);
+
+      // Left spinning on purpose: the route change is what ends this state.
+      router.push(`/workspace/${workspaceId}`);
+    } catch (err) {
+      console.error("Error in onGenerate:", err);
+      setError('Could not start your project. Please try again.')
+      setCreating(false)
     }
 }
  
@@ -55,18 +66,27 @@ const Hero = () => {
       <div className='p-5 border rounded-xl max-w-xl w-full mt-3 bg-[#151515]'>
       <div className='flex gap-2 '>
          <textarea name="" id=""
-         className='outline-none bg-[#151515] w-full h-32 max-h-56 resize-none'
+         disabled={creating}
+         className='outline-none bg-[#151515] w-full h-32 max-h-56 resize-none disabled:opacity-50'
          placeholder={'Enter your prompt for project'}
          onChange={(e)=>setInput(e.target.value)
          }
          ></textarea>
-         {input?<ArrowRight onClick={()=>onGenerate(input)} className='bg-blue-500 p-2 h-10 w-10 rounded-md cursor-pointer'></ArrowRight> :" "}
+         {creating
+           ? <Loader2Icon className='bg-blue-500 p-2 h-10 w-10 rounded-md animate-spin shrink-0'></Loader2Icon>
+           : input
+             ? <ArrowRight onClick={()=>onGenerate(input)} className='bg-blue-500 p-2 h-10 w-10 rounded-md cursor-pointer shrink-0'></ArrowRight>
+             : " "}
       </div>
       <div>
         <Link className='h-5 w-5'></Link>
       </div>
       </div>
-      <div className='flex flex-wrap max-w-2xl justify-center items-center gap-3 mt-7'>
+      {creating && <p className='text-sm text-gray-400 flex items-center gap-2 mt-1'>
+        <Loader2Icon className='h-4 w-4 animate-spin' /> Setting up your project...
+      </p>}
+      {error && <p className='text-sm text-red-400 mt-1'>{error}</p>}
+      <div className={`flex flex-wrap max-w-2xl justify-center items-center gap-3 mt-7 ${creating ? 'opacity-50 pointer-events-none' : ''}`}>
         {suggestions.map((suggestion , index)=>(
           <div key={index} onClick={()=>
             onGenerate(suggestion)

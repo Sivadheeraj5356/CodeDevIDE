@@ -3,16 +3,20 @@ import React from 'react'
 import { Button } from '../ui/button'
 import { useRouter } from 'next/navigation'
 import { googleLogout } from '@react-oauth/google';
+import { useSidebar } from '@/components/ui/sidebar'
 const CustomSidebarFooter = () => {
     const router=useRouter();
+    const {toggleSidebar}=useSidebar();
     const options=[
         {
             name:'Settings',
-            icon:Settings
+            icon:Settings,
+            path:'/settings'
         },
         {
             name:'Help Center',
-            icon:HelpCircle
+            icon:HelpCircle,
+            path:'/help-center'
         },
         {
             name:'My Subscription',
@@ -27,18 +31,18 @@ const CustomSidebarFooter = () => {
     ]
 
     const onOptionClick=(option)=>{
-       
         if(option?.path=='signOut')
         {
             googleLogout();
-            if(typeof window!==undefined)
-            {
-                localStorage.clear();
-            }
+            localStorage.clear();
             router.push('/');
             window.location.reload();
             return ;
         }
+
+        if(!option?.path) return
+
+        toggleSidebar()
         router.push(option.path)
     }
   return (

@@ -20,16 +20,21 @@ const SandpackPreviewClient = ({maximizePreview, setMaximizePreview}) => {
       if(!client) return
 
       try{
-        const result = await client.getCodeSandboxURL()
-        if(!result?.sandboxId){
+        const {sandboxId, editorUrl, embedUrl} = await client.getCodeSandboxURL()
+        if(!sandboxId){
           console.error('CodeSandbox did not return a sandbox id')
           return
         }
 
         if(actionType === 'deploy'){
-          window.open('https://'+result.sandboxId+'.csb.app')
+          // Sandpack only hands back an editor and an embed URL. The
+          // https://<id>.csb.app host answers 400 with an "are you sure you
+          // want to open this preview" interstitial, so the app never renders;
+          // the embed in preview mode runs it directly.
+          const preview = embedUrl || `https://codesandbox.io/embed/${sandboxId}`
+          window.open(`${preview}?view=preview&hidenavigation=1`)
         }else{
-          window.open('https://codesandbox.io/s/'+result.sandboxId)
+          window.open(editorUrl || `https://codesandbox.io/s/${sandboxId}`)
         }
       }catch(err){
         console.error('Could not open the sandbox:', err)

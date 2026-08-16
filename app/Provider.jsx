@@ -73,14 +73,14 @@ const Provider = ({children}) => {
               enableSystem={false}
               forcedTheme="dark"
             >
-              <div className="max-h-screen">
+              <div className="max-h-screen w-full">
                 <SidebarProvider defaultOpen={false}>
                   <div className='absolute'>
                   <AppSidebar />
                   </div>
-                  <div className='pl-0'>
+                  <div className='relative flex min-h-svh w-full min-w-0 flex-1 flex-col'>
                     <Header />
-                    <main>{children}</main>
+                    <main className='w-full flex-1'>{children}</main>
                   </div>
                 </SidebarProvider>
               </div>
