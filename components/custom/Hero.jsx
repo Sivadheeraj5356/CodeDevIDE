@@ -38,8 +38,9 @@ const Hero = () => {
         content: input
       }]);
 
+      // The backend attaches the workspace to the verified signed-in
+      // identity; the client never sends a user id.
       const workspaceId = await createWorkspace({
-        user: userDetails._id,
         messages:[{
           role:'user',
           content:input
@@ -60,23 +61,26 @@ const Hero = () => {
 }
  
  return (
-    <div className='flex w-screen flex-col mt-36 xl:mt-42 gap-3 justify-center items-center'>
-      <h2 className='font-bold text-4xl tracking-tight '>What do you what to build ?</h2>
-      <p className='text-gray-400 font-medim'>Prompt,run,edit and deploy full-stack web applications</p>
-      <div className='p-5 border rounded-xl max-w-xl w-full mt-3 bg-[#151515]'>
+    <div className='flex w-full flex-col mt-20 sm:mt-36 xl:mt-42 gap-3 justify-center items-center px-4 sm:px-0'>
+      <h2 className='font-bold text-3xl sm:text-4xl tracking-tight text-center '>What do you want to build?</h2>
+      <p className='text-gray-400 font-medium'>Prompt, run, edit, and deploy full-stack web applications</p>
+      <div className='p-5 border border-[#2A3130] rounded-2xl max-w-xl w-full mt-3 bg-[#171B1C]'>
       <div className='flex gap-2 '>
          <textarea name="" id=""
          disabled={creating}
-         className='outline-none bg-[#151515] w-full h-32 max-h-56 resize-none disabled:opacity-50'
+         className='outline-none bg-transparent w-full h-32 max-h-56 resize-none disabled:opacity-50'
          placeholder={'Enter your prompt for project'}
          onChange={(e)=>setInput(e.target.value)
          }
+         onKeyDown={(e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); if(input && !creating) onGenerate(input); } }}
          ></textarea>
          {creating
-           ? <Loader2Icon className='bg-blue-500 p-2 h-10 w-10 rounded-md animate-spin shrink-0'></Loader2Icon>
-           : input
-             ? <ArrowRight onClick={()=>onGenerate(input)} className='bg-blue-500 p-2 h-10 w-10 rounded-md cursor-pointer shrink-0'></ArrowRight>
-             : " "}
+           ? <Loader2Icon className='bg-[#5F8F7B] p-2 h-10 w-10 rounded-md animate-spin shrink-0'></Loader2Icon>
+           : <button type='button' aria-label='Generate project' disabled={!input}
+               onClick={()=>input && onGenerate(input)}
+               className='bg-[#5F8F7B] hover:bg-[#527D6C] disabled:opacity-40 disabled:cursor-not-allowed p-2 h-10 w-10 rounded-md cursor-pointer shrink-0 flex items-center justify-center text-[#101314] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7FB39D] transition-colors'>
+               <ArrowRight className='h-6 w-6'></ArrowRight>
+             </button>}
       </div>
       <div>
         <Link className='h-5 w-5'></Link>
@@ -88,9 +92,9 @@ const Hero = () => {
       {error && <p className='text-sm text-red-400 mt-1'>{error}</p>}
       <div className={`flex flex-wrap max-w-2xl justify-center items-center gap-3 mt-7 ${creating ? 'opacity-50 pointer-events-none' : ''}`}>
         {suggestions.map((suggestion , index)=>(
-          <div key={index} onClick={()=>
+          <button type='button' key={index} onClick={()=>
             onGenerate(suggestion)
-          } className='p-1 px-4 border rounded-full text-sm text-gray-400 hover:text-white cursor-pointer '>{suggestion}</div>
+          } className='px-4 py-1.5 border border-[#2A3130] rounded-full text-sm text-[#9BA29B] hover:text-[#EDE8DC] hover:border-[#5F8F7B] cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7FB39D]'>{suggestion}</button>
         ))}
       </div>
       <SignInDialog openDialog={openDialog} closeDialog={(e)=>setOpenDialog(false)}></SignInDialog>
