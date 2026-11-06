@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api
+Disallow: /workspace
+Disallow: /settings
+Disallow: /fixture-workspace
+
+Sitemap: https://codedevai.vercel.app/sitemap.xml
