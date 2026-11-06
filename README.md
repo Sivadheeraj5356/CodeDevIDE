@@ -67,3 +67,39 @@ data/LookUp.jsx               default Sandpack files and dependencies
 Push to Vercel and set `NEXT_PUBLIC_CONVEX_URL`, `NEXT_PUBLIC_GOOGLE_AUTH_KEY`, `GEMINI_API_KEY` and `GEMINI_MODEL` in the project's environment variables, then run `npx convex deploy` so the production Convex deployment has the current functions. Add the deployed domain to the OAuth client's authorized origins too.
 
 `vercel.json` raises the timeout on `/api/gen-ai-code` to 60 seconds. Generating a full project usually takes 25 to 45 seconds, so that ceiling is real: very elaborate prompts can hit it. Trimming `CODE_GEN_PROMPT` in `data/Prompt.jsx` is the cheapest way to speed things up, since it currently asks for a header, navbar, footer, dashboard, routing and a dark mode toggle on every single generation.
+
+## Authentication and access control
+
+Sign-in uses Google's OIDC credential flow: the client receives a Google ID
+token (a signed JWT), and both the Convex backend and the paid Next.js API
+routes verify that token server-side. There is no client-side session state
+that the backend trusts.
+
+- `convex/auth.config.js` registers Google as the OIDC provider (issuer
+  `https://accounts.google.com`, audience = the OAuth web client ID). It ships
+  with the current client ID as a default; export `GOOGLE_CLIENT_ID` before
+  `npx convex deploy` if the OAuth client ever rotates.
+- Every Convex function in `convex/users.js` and `convex/workspace.js`
+  requires the verified identity (`ctx.auth.getUserIdentity()`) and enforces
+  workspace ownership. Clients never send an email or user id for themselves.
+- `/api/ai-chat` and `/api/gen-ai-code` require `Authorization: Bearer <id
+  token>` and verify it locally against Google's public JWKS (signature,
+  issuer, audience, expiry, per Google's production guidance) before any
+  model call (`lib/server-auth.js`), so anonymous traffic cannot spend the
+  Gemini quota. No cookies are used, so there is no CSRF surface.
+- The client session (`lib/session.js`) is the ID token plus its claims. The
+  old unsigned `localStorage["user"]` profile is deleted on load and on
+  sign-in. ID tokens expire after about an hour; when a session expires the
+  user signs in again.
+
+Deploying these changes requires both halves: `npx convex deploy` (pushes
+`auth.config.js` and the guarded functions) and the Vercel redeploy of the
+Next app. Deploying only one breaks sign-in: the new client no longer sends
+the `email`/`userId` arguments the old backend functions required.
+
+Tests: `npm test` covers token handling (`lib/__tests__/session.test.js`),
+Google token verification failures (`lib/__tests__/server-auth.test.js`), the
+anonymous-request gate on both AI routes
+(`lib/__tests__/api-routes-auth.test.js`), and the full backend authorization
+contract (anonymous rejected everywhere, cross-user read/write/list blocked,
+owner allowed) in `convex-tests/authz.test.js` via `convex-test`.

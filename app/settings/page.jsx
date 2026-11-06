@@ -22,9 +22,7 @@ const Settings = () => {
 
     const loadWorkspaces = async () => {
       try {
-        const result = await convex.query(api.workspace.GetAllWorkspace, {
-          userId: userDetails._id
-        })
+        const result = await convex.query(api.workspace.GetAllWorkspace, {})
         setWorkspaceCount(result?.length ?? 0)
       } catch (err) {
         console.error('Could not load workspaces:', err)

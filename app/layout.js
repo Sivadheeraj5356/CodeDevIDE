@@ -1,8 +1,8 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Sora, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Provider from "./Provider";
 import {ConvexClientProvider } from "./ConvexClientProvider";
-const geistSans = Geist({
+const geistSans = Sora({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });

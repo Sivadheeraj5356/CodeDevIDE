@@ -4,22 +4,20 @@ import React, { useContext, useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useConvex, useMutation } from 'convex/react'
 import { ContextMessages } from '@/context/ContextMessages'
-import { UserDetailsContext } from '@/context/UserDetailContext'
-import Image from 'next/image'
-import { Link } from 'lucide-react'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, ListChecks } from 'lucide-react'
+import { parsePlanFiles, stripPlanLines } from '@/lib/build-plan'
+import { MODEL_LABEL } from '@/lib/model-label'
 import Prompt from '@/data/Prompt'
 import axios from 'axios'
+import { authHeaders } from '@/lib/session'
 import { AlertTriangle, Loader2Icon } from 'lucide-react'
 import Markdown from 'react-markdown'
 
 const ChatView = () => {
   const {id} = useParams()
   const {messages , setMessages} = useContext(ContextMessages)
-  const {userDetails,setUserDetails} =useContext(UserDetailsContext)
   const [input , setInput]= useState('')
   const [loading , setLoading] = useState(false)
-  const [pageLoading , setPageLoading] = useState(false)
   const [chatError , setChatError] = useState(null)
   const updateMessages = useMutation(api.workspace.updateWorkspace)
    const convex = useConvex()
@@ -48,6 +46,8 @@ const ChatView = () => {
     try{
       const result = await axios.post('/api/ai-chat',{
         prompt:PROMPT
+      }, {
+        headers: authHeaders()
       })
       const content = result?.data?.result
       if(!content){
@@ -90,37 +90,73 @@ const ChatView = () => {
      setInput('')
    }
    const scrollRef = useRef(null)
+   const chatContainerRef = useRef(null)
   useEffect(()=>{
-    if(scrollRef.current){
-     scrollRef.current?.scrollIntoView({ behavior : 'smooth'})
+    if(chatContainerRef.current){
+     // Scroll only the chat container: scrollIntoView also scrolls the window,
+     // which pushed the header off-screen on mobile.
+     chatContainerRef.current.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: 'smooth' })
     }
   },[messages])
 
- 
+
   return (
-    <div className=' relative flex flex-col h-[85vh]'>
-      <div className='flex-1 overflow-y-auto scrollbar-hide'>
-      {messages?.length>0&& messages?.map((msg,id)=>(
-        <div  key={id} className='p-3 px-5 rounded-lg mb-2 bg-[#262626] max-w-[470px] min-w-[470px] overflow-x-clip flex gap-2 items-start leading-7'>
-          {msg?.role === 'user' && userDetails?.picture && <Image src={userDetails.picture} alt='user-image' width={30} height={30} className='rounded-full'></Image>}
-           <div><Markdown className='flex flex-col'>{msg?.content ?? ''}</Markdown></div>
+    <div className='relative flex h-full min-h-0 w-full flex-col'>
+      {/* Message thread: caption + plain text, no bubble blocks */}
+      <div ref={chatContainerRef} className='flex-1 overflow-y-auto scrollbar-hide px-4 py-4'>
+      {messages?.length>0&& messages?.map((msg,id)=>{
+        const plan = msg?.role === 'ai' ? parsePlanFiles([msg]) : []
+        const body = plan.length ? stripPlanLines(msg?.content, plan) : (msg?.content ?? '')
+        if (msg?.role === 'user') {
+          return (
+            <div key={id} className='mb-5 flex justify-end'>
+              <div className='max-w-[85%] rounded-lg border border-dashed border-[#3A4240] px-3.5 py-2.5'>
+                <Markdown className='flex flex-col text-sm leading-6 text-[#EDE8DC]'>{msg?.content ?? ''}</Markdown>
+              </div>
+            </div>
+          )
+        }
+        return (
+        <div key={id} className='mb-5'>
+          {body && <div className='overflow-x-clip'>
+            <Markdown className='flex flex-col text-sm leading-6 text-[#EDE8DC]'>{body}</Markdown>
+          </div>}
+          {plan.length > 0 && (
+            <div className='mt-2.5 overflow-hidden rounded-lg border border-[#2A3130] bg-[#171B1C]'>
+              <div className='flex items-center gap-2 border-b border-[#2A3130] px-3 py-2 text-[12px] font-medium text-[#A8B3B0]'>
+                <ListChecks className='h-3.5 w-3.5 text-[#7FB39D]' />
+                Build plan
+                <span className='ml-auto rounded-full bg-[#5F8F7B]/20 px-2 py-0.5 text-[10.5px] text-[#7FB39D]'>{plan.length} files</span>
+              </div>
+              <div className='flex flex-col gap-2 px-3 py-2.5'>
+                {plan.map((f) => (
+                  <div key={f.path} className='flex items-baseline gap-2 text-[12px]'>
+                    <span className='h-1.5 w-1.5 shrink-0 -translate-y-px rounded-full bg-[#7FB39D]' />
+                    <span className='shrink-0 font-mono text-[#EDE8DC]'>{f.path.split('/').pop()}</span>
+                    {f.path.includes('/') && <span className='shrink-0 font-mono text-[#7C8784]'>{f.path.split('/').slice(0,-1).join('/')}/</span>}
+                    {f.note && <span className='leading-5 text-[#A8B3B0]'>{f.note}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      ))}
+      )})}
       <div ref={scrollRef}>
-      {loading && <>
-       <div className='p-3 rounded-lg mb-2 bg-[#262626] flex gap-2 items-start'>
-         <div> <Loader2Icon className='animate-spin'></Loader2Icon>  </div>
-         <div>Generating from AI ....</div>
+      {loading && (
+       <div className='mb-5 flex items-center gap-2.5 text-sm text-[#A8B3B0]'>
+         <Loader2Icon className='h-4 w-4 animate-spin text-[#7FB39D]' />
+         Generating...
        </div>
-      </>}
+      )}
       {!loading && chatError && (
-        <div className='p-3 px-4 rounded-lg mb-2 border border-red-500/40 bg-red-500/10 max-w-[470px] flex gap-3 items-start'>
+        <div className='mb-5 flex items-start gap-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3.5 py-3'>
           <AlertTriangle className='h-5 w-5 shrink-0 text-red-400 mt-0.5' />
           <div className='text-sm'>
             <p className='text-red-200 leading-6'>{chatError}</p>
             <button
               onClick={getAiResponse}
-              className='mt-2 text-blue-400 hover:underline'
+              className='mt-2 text-[#7FB39D] hover:underline'
             >
               Try again
             </button>
@@ -130,22 +166,31 @@ const ChatView = () => {
       </div>
       </div>
 
-
-      <div className='p-5 border rounded-xl max-w-xl w-full mt-3 bg-[#151515]'>
-      <div className='flex gap-2 '>
-         <textarea name="" id=""
-         value={input}
-         className='outline-none bg-[#151515] w-full h-32 max-h-56 resize-none'
-         placeholder={'Enter your prompt for project'}
-         onChange={(e)=>setInput(e.target.value)
-         }
-         ></textarea>
-         {input?<ArrowRight onClick={()=>{onGenerate(input)
-           }} className='bg-blue-500 p-2 h-10 w-10 rounded-md cursor-pointer'></ArrowRight> :" "}
-      </div>
-      <div>
-        <Link className='h-5 w-5'></Link>
-      </div>
+      {/* Composer: one round send, no dead controls */}
+      <div className='shrink-0 border-t border-[#2A3130] p-3'>
+        <div className='rounded-2xl border border-[#2A3130] bg-[#171B1C] transition-colors focus-within:border-[#5F8F7B]/60'>
+          <textarea name="" id=""
+            value={input}
+            rows={2}
+            className='max-h-40 w-full resize-none bg-transparent px-3.5 pt-3 text-sm leading-6 outline-none placeholder:text-[#5A6361]'
+            placeholder='Describe the change you want...'
+            onChange={(e)=>setInput(e.target.value)}
+            onKeyDown={(e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); if(input && !loading) onGenerate(input); } }}
+          ></textarea>
+          <div className='flex items-center justify-between gap-2 px-3 pb-2.5 pt-1'>
+            <span className='inline-flex items-center gap-1.5 rounded-md border border-[#2A3130] bg-[#101314] px-2 py-1 font-mono text-[10.5px] text-[#8A9492]'>
+              <span className='h-1.5 w-1.5 rounded-full bg-[#7FB39D]' />
+              {MODEL_LABEL}
+            </span>
+            <span className='hidden text-[11px] text-[#5A6361] sm:inline'>Enter to send</span>
+            <div className='flex-1' />
+            <button type='button' aria-label='Send message' disabled={!input || loading}
+              onClick={()=>{ if(input && !loading) onGenerate(input) }}
+              className='flex h-8 w-8 items-center justify-center rounded-full bg-[#5F8F7B] text-[#101314] transition-colors hover:bg-[#527D6C] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7FB39D]'>
+              <ArrowRight className='h-4 w-4' />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )

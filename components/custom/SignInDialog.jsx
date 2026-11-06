@@ -5,21 +5,19 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
   } from "@/components/ui/dialog"
-import { Button } from '../ui/button'
 import { GoogleLogin } from '@react-oauth/google'
 import { UserDetailsContext } from '@/context/UserDetailContext'
-import { useGoogleLogin } from '@react-oauth/google'
-import axios from 'axios'
-import { useMutation, useQuery } from 'convex/react'
+import { useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
-import uuid4 from 'uuid4'
+import { saveSession } from '@/lib/session'
+import { applyStoredAuth } from '@/lib/convex-client'
 
 const SignInDialog = ({openDialog, closeDialog}) => {
   const {userDetails, setUserDetails} = useContext(UserDetailsContext)
   const createUser = useMutation(api.users.CreateUser)
   const [signInError, setSignInError] = useState(null)
+  const [signingIn, setSigningIn] = useState(false)
 
   useEffect(() => {
     if (userDetails?._id) {
@@ -27,64 +25,46 @@ const SignInDialog = ({openDialog, closeDialog}) => {
     }
   }, [userDetails])
 
-  const googleLogin = useGoogleLogin({
-    // Always show the account chooser instead of silently reusing whichever
-    // Google account the browser is already signed in to.
-    prompt: 'select_account',
-    onSuccess: async (tokenResponse) => {
+  const onGoogleSuccess = async (credentialResponse) => {
+    const idToken = credentialResponse?.credential
+    const session = idToken ? saveSession(idToken) : null
+    if (!session) {
+      setSignInError('Google did not return a usable sign-in token. Please try again.')
+      return
+    }
+
+    try {
+      setSignInError(null)
+      setSigningIn(true)
+      // Register the token with Convex BEFORE the first authed call so the
+      // backend sees the verified Google identity, not a client-made profile.
+      applyStoredAuth()
+
+      let convexUser
       try {
-        setSignInError(null)
-        const userInfo = await axios.get(
-          'https://www.googleapis.com/oauth2/v3/userinfo',
-          { headers: { Authorization: 'Bearer '+ tokenResponse?.access_token } },
-        );
-
-        const user = userInfo.data;
-        const convexUser = await createUser({
-          name: user?.name,
-          email: user?.email,
-          picture: user?.picture,
-          uid: uuid4()
-        });
-
-        const userWithId = {
-          ...user,
-          _id: convexUser._id
-        };
-
-        localStorage.setItem('user', JSON.stringify(userWithId));
-        setUserDetails(userWithId);
-        closeDialog(false);
-      } catch (err) {
-        console.error('Sign in failed:', err);
-        setSignInError(err?.message || 'Sign in failed. Please try again.');
+        convexUser = await createUser({})
+      } catch (firstErr) {
+        // Token propagation after setAuth can lag one round trip; retry once.
+        await new Promise((resolve) => setTimeout(resolve, 700))
+        convexUser = await createUser({})
       }
-    },
-    onError: errorResponse => {
-      console.error('Google sign in failed:', errorResponse);
-      setSignInError(
-        errorResponse?.error_description ||
-        errorResponse?.error ||
-        'Google rejected the sign in. If the popup showed "origin_mismatch", add ' +
-        (typeof window !== 'undefined' ? window.location.origin : '') +
-        ' as an authorized JavaScript origin on the OAuth client in Google Cloud Console.'
-      );
-    },
-    // Fires when the popup itself fails (blocked by the browser, or closed
-    // before Google returned a token) - these never reach onError.
-    onNonOAuthError: nonOAuthError => {
-      console.error('Google popup did not complete:', nonOAuthError);
-      setSignInError(
-        nonOAuthError?.type === 'popup_closed'
-          ? 'The Google window closed before sign in finished. If it showed "Access blocked / origin_mismatch", add ' +
-            (typeof window !== 'undefined' ? window.location.origin : '') +
-            ' as an authorized JavaScript origin on the OAuth client in Google Cloud Console.'
-          : 'Could not open the Google sign in window. Check that popups are allowed for this site.'
-      );
-    },
-  });
 
-  if (userDetails?._id) return null;
+      setUserDetails({
+        name: session.name,
+        email: session.email,
+        picture: session.picture,
+        _id: convexUser._id
+      })
+      closeDialog(false)
+    } catch (err) {
+      console.error('Sign in failed:', err)
+      setSignInError(err?.message || 'Sign in failed. Please try again.')
+    } finally {
+      setSigningIn(false)
+    }
+  }
+
+  if (userDetails?._id) return null
 
   return (
     <Dialog open={openDialog} onOpenChange={closeDialog}>
@@ -96,12 +76,18 @@ const SignInDialog = ({openDialog, closeDialog}) => {
           </DialogDescription>
         </DialogHeader>
         <div className='flex flex-col items-center justify-center gap-3'>
-          <Button
-            className='bg-blue-500 text-white hover:bg-blue-400 mt-3'
-            onClick={googleLogin}
-          >
-            Sign In with Google
-          </Button>
+          <div className={signingIn ? 'opacity-50 pointer-events-none mt-3' : 'mt-3'}>
+            <GoogleLogin
+              onSuccess={onGoogleSuccess}
+              onError={() => setSignInError('Google sign in failed. Check that popups are allowed for this site.')}
+              theme='filled_black'
+              size='large'
+              shape='rectangular'
+              text='signin_with'
+              width='260'
+            />
+          </div>
+          {signingIn && <div className='text-sm text-muted-foreground'>Signing you in...</div>}
           {signInError && <div className='w-full bg-red-500/10 border border-red-500/40 text-red-300 text-sm rounded-md p-3 break-words'>
             {signInError}
           </div>}

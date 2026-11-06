@@ -18,9 +18,7 @@ function WorkspaceHistory() {
 
     const GetAllWorkspace=async()=>{
         try{
-            const result=await convex.query(api.workspace.GetAllWorkspace,{
-                userId:userDetails?._id
-            });
+            const result=await convex.query(api.workspace.GetAllWorkspace,{});
             setWorkspaceList(result);
         }catch(err){
             console.error('Failed to load workspace history:', err);
