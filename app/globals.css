@@ -3,7 +3,9 @@
 @tailwind utilities;
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #101314;
+  color: #EDE8DC;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
@@ -131,4 +133,9 @@ body {
 }
 .run button[title='Open in CodeSandbox']{
   display: none !important;
+}
+/* Workspace IDE: make the Sandpack provider chain fill the framed panel so
+   the editor/explorer/status-bar column stretches edge to edge. */
+.run .sp-wrapper {
+  height: 100%;
 }
