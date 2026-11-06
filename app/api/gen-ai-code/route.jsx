@@ -1,4 +1,5 @@
 import { createCodeSession, describeAiError } from "@/configs/AiGeminiModel"
+import { requireApiUser, AuthError } from "@/lib/server-auth"
 import { NextResponse } from "next/server"
 
 // The model is asked for raw JSON, but it sometimes wraps it in a markdown
@@ -21,6 +22,10 @@ function parseJsonResponse(text) {
 
 export async function POST(req) {
     try {
+        // Authentication happens before any model call so anonymous traffic
+        // cannot spend the server's Gemini quota.
+        await requireApiUser(req)
+
         const { prompt } = await req.json()
 
         if (!prompt) {
@@ -51,6 +56,9 @@ export async function POST(req) {
 
         return NextResponse.json(parsed)
     } catch (e) {
+        if (e instanceof AuthError) {
+            return NextResponse.json({ error: e.message }, { status: e.status })
+        }
         const { status, message } = describeAiError(e)
         console.error(`[api/gen-ai-code] ${status}: ${message}`)
         return NextResponse.json({ error: message }, { status })
