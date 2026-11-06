@@ -1,8 +1,13 @@
 import { createChatSession, describeAiError } from "@/configs/AiGeminiModel"
+import { requireApiUser, AuthError } from "@/lib/server-auth"
 import { NextResponse } from "next/server"
 
 export async function POST(req) {
     try {
+        // Authentication happens before any model call so anonymous traffic
+        // cannot spend the server's Gemini quota.
+        await requireApiUser(req)
+
         const { prompt } = await req.json()
 
         if (!prompt) {
@@ -15,6 +20,9 @@ export async function POST(req) {
 
         return NextResponse.json({ result: AiResponse })
     } catch (error) {
+        if (error instanceof AuthError) {
+            return NextResponse.json({ error: error.message }, { status: error.status })
+        }
         const { status, message } = describeAiError(error)
         console.error(`[api/ai-chat] ${status}: ${message}`)
         return NextResponse.json({ error: message }, { status })
