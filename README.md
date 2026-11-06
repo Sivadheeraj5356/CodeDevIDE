@@ -77,8 +77,11 @@ that the backend trusts.
 
 - `convex/auth.config.js` registers Google as the OIDC provider (issuer
   `https://accounts.google.com`, audience = the OAuth web client ID). It ships
-  with the current client ID as a default; export `GOOGLE_CLIENT_ID` before
-  `npx convex deploy` if the OAuth client ever rotates.
+  with the current client ID as a default. `GOOGLE_CLIENT_ID` must also be
+  set on the Convex deployment itself (Convex dashboard -> deployment
+  Settings -> Environment Variables): `convex deploy` fails with "used in
+  auth config file but its value was not set" otherwise, because it does not
+  read the in-file default. Set it to the same public client ID.
 - Every Convex function in `convex/users.js` and `convex/workspace.js`
   requires the verified identity (`ctx.auth.getUserIdentity()`) and enforces
   workspace ownership. Clients never send an email or user id for themselves.
