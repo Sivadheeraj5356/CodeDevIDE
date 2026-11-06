@@ -1,0 +1,13 @@
+# CodeDevAI
+
+> CodeDevAI is a browser IDE that turns a written prompt into a running React project. You describe what you want, AI (Gemini) writes the files, and the result opens in an online editor with a live preview - no local setup, no build step.
+
+CodeDevAI lets you prompt, run, edit and deploy full-stack web applications entirely in the browser. You sign in with Google, type a prompt on the landing page, and get a workspace where an AI chat plans the app and a code view generates the whole project, bundled and run live in the browser. Workspaces are saved, so reopening one restores your project.
+
+Built by Siva Dheeraj (https://sivadheeraj.vercel.app/). Stack: Next.js, Convex, Google OAuth, Gemini, Sandpack.
+
+## Pages
+
+- [Home](https://codedevai.vercel.app/): landing page and prompt input
+- [Pricing](https://codedevai.vercel.app/pricing): pricing plans
+- [Help Center](https://codedevai.vercel.app/help-center): help and support
