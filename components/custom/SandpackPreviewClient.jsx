@@ -12,7 +12,7 @@ const SandpackPreviewClient = ({maximizePreview, setMaximizePreview}) => {
     const {action , setAction} = useContext(ActionContext)
     const GetSandpackClient =async()=>{
       const actionType = action?.actionType
-      if(actionType !== 'deploy' && actionType !== 'export') return
+      if(actionType !== 'export') return
 
       // The bundler may not be ready on the first pass; this effect runs again
       // when its status changes, so leave the action pending until then.
@@ -26,16 +26,7 @@ const SandpackPreviewClient = ({maximizePreview, setMaximizePreview}) => {
           return
         }
 
-        if(actionType === 'deploy'){
-          // Sandpack only hands back an editor and an embed URL. The
-          // https://<id>.csb.app host answers 400 with an "are you sure you
-          // want to open this preview" interstitial, so the app never renders;
-          // the embed in preview mode runs it directly.
-          const preview = embedUrl || `https://codesandbox.io/embed/${sandboxId}`
-          window.open(`${preview}?view=preview&hidenavigation=1`)
-        }else{
-          window.open(editorUrl || `https://codesandbox.io/s/${sandboxId}`)
-        }
+        window.open(editorUrl || `https://codesandbox.io/s/${sandboxId}`)
       }catch(err){
         console.error('Could not open the sandbox:', err)
       }finally{
@@ -50,7 +41,7 @@ const SandpackPreviewClient = ({maximizePreview, setMaximizePreview}) => {
     },[action, sandpack?.status])
 
   const previewStyle = useMemo(() => ({
-    height: maximizePreview ? "100vh" : "80vh",
+    height: maximizePreview ? "100vh" : "100%",
     width: maximizePreview ? "100vw" : "100%", 
     position: maximizePreview ? "fixed" : "relative",
     top: maximizePreview ? "0" : "auto",
