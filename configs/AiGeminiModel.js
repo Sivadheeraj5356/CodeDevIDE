@@ -40,6 +40,11 @@ const CODE_GEN_HISTORY = [
   },
 ];
 
+const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
+const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
+const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "google/gemma-4-31b-it:free";
+
 function getModel() {
   if (!apiKey) {
     throw new Error(
@@ -49,18 +54,137 @@ function getModel() {
   return new GoogleGenerativeAI(apiKey).getGenerativeModel({ model: MODEL_NAME });
 }
 
+// The fallback providers speak the OpenAI chat-completions shape, so a Gemini
+// session history maps onto plain user/assistant messages.
+function toOpenAiMessages(history, prompt) {
+  const messages = history.map((entry) => ({
+    role: entry.role === "model" ? "assistant" : "user",
+    content: entry.parts.map((part) => part.text || "").join("\n"),
+  }));
+  messages.push({ role: "user", content: prompt });
+  return messages;
+}
+
+async function callOpenAiCompatible(endpoint, key, model, messages, config) {
+  const body = {
+    model,
+    messages,
+    temperature: config.temperature,
+    top_p: config.topP,
+    max_tokens: Math.min(config.maxOutputTokens || 8192, 16384),
+  };
+  if (config.responseMimeType === "application/json") {
+    body.response_format = { type: "json_object" };
+  }
+  const post = () =>
+    fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(55000),
+    });
+  let response = await post();
+  if (response.status === 400 && body.response_format) {
+    delete body.response_format;
+    response = await post();
+  }
+  if (!response.ok) {
+    const error = new Error(`${model} returned HTTP ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
+  const payload = await response.json();
+  const text = (payload.choices || [])
+    .map((choice) => choice.message?.content || "")
+    .join("")
+    .trim();
+  if (!text) {
+    throw new Error(`${model} returned an empty response`);
+  }
+  const finishReason = payload.choices?.[0]?.finish_reason;
+  return { text, finishReason: finishReason === "length" ? "MAX_TOKENS" : "STOP" };
+}
+
+function fallbackProviders() {
+  const providers = [];
+  if (process.env.GROQ_API_KEY) {
+    providers.push({ name: "groq", endpoint: GROQ_ENDPOINT, key: process.env.GROQ_API_KEY, model: GROQ_MODEL });
+  }
+  if (process.env.OPENROUTER_API_KEY) {
+    providers.push({ name: "openrouter", endpoint: OPENROUTER_ENDPOINT, key: process.env.OPENROUTER_API_KEY, model: OPENROUTER_MODEL });
+  }
+  return providers;
+}
+
 // A chat session keeps its own history, so each request gets a fresh one.
 // Sharing a single module-level session across requests leaks conversations
 // between users and grows the history until the model call fails.
+function createSession(history, config) {
+  return {
+    async sendMessage(prompt) {
+      const attempts = [];
+      if (apiKey) {
+        attempts.push({
+          name: "gemini",
+          run: async () => {
+            const session = getModel().startChat({ generationConfig: config, history });
+            const result = await session.sendMessage(prompt);
+            return {
+              text: result.response.text(),
+              finishReason: result.response.candidates?.[0]?.finishReason,
+            };
+          },
+        });
+      }
+      for (const provider of fallbackProviders()) {
+        attempts.push({
+          name: provider.name,
+          run: () =>
+            callOpenAiCompatible(
+              provider.endpoint,
+              provider.key,
+              provider.model,
+              toOpenAiMessages(history, prompt),
+              config
+            ),
+        });
+      }
+      if (!attempts.length) {
+        throw new Error(
+          "Missing Gemini API key. Set GEMINI_API_KEY in .env.local (and in your Vercel project settings)."
+        );
+      }
+      const failures = [];
+      let lastError;
+      for (const attempt of attempts) {
+        try {
+          const result = await attempt.run();
+          return {
+            response: {
+              text: () => result.text,
+              candidates: [{ finishReason: result.finishReason }],
+            },
+          };
+        } catch (error) {
+          failures.push(`${attempt.name}: ${error?.message || error}`);
+          lastError = error;
+        }
+      }
+      console.error(`[ai] providers failed: ${failures.join("; ")}`);
+      throw lastError;
+    },
+  };
+}
+
 export function createChatSession() {
-  return getModel().startChat({ generationConfig, history: [] });
+  return createSession([], generationConfig);
 }
 
 export function createCodeSession() {
-  return getModel().startChat({
-    generationConfig: CodeGenerationConfig,
-    history: CODE_GEN_HISTORY,
-  });
+  return createSession(CODE_GEN_HISTORY, CodeGenerationConfig);
 }
 
 export const GEMINI_MODEL_NAME = MODEL_NAME;
